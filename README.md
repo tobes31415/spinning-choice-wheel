@@ -45,4 +45,4 @@ function MyApp() {
   },
 ],
 ```
-I haven't figured out how to get react to correctly update the properties on the web component yet.  All my attempt so far just result in it setting attributes to "[Object object]".  If someone reading this happens to know how to fix this I would love to learn.
+I haven't figured out how to get react to correctly update the properties on the web component by itself yet, hence why the example above I'm capturing the reference and updating it manually.  Ironically enough the types are defined so that it even can validate the signatures, it just utterly refuses to update the property on the dom when trying to bind it using JSX.  All my attempt so far just result in it setting attributes to "[Object object]".  If someone reading this happens to know how to fix this I would love to learn.
