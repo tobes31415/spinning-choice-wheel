@@ -8,13 +8,13 @@ export interface SegmentDescription<V> {
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      ["wheel-component"]: {
-        segments: SegmentDescription<string>[];
-        onchange: (value: string) => void;
-        spin: () => void;
-      };
+      ["spinning-choice-wheel"]: Partial<WheelComponentAttributes<string>>;
     }
   }
+}
+
+interface WheelComponentAttributes<V> extends HTMLElement {
+  ref: MutableRef<SpinningChoiceWheelComponent<V>>;
 }
 
 const css = `
@@ -31,7 +31,12 @@ const css = `
  }
 `;
 
-export class WheelComponent<V> extends HTMLElement {
+type SingleArgCallBack<V> = (value: V) => void;
+type MutableRef<V> = {
+  current: V | null;
+};
+
+export class SpinningChoiceWheelComponent<V> extends HTMLElement {
   #segments_parsed: SegmentDescription<V>[] = [];
   get segments() {
     return this.#segments_parsed;
@@ -46,8 +51,25 @@ export class WheelComponent<V> extends HTMLElement {
     this.#segments_parsed = newValue;
   }
 
+  onwheelstopped?: (value: V) => void;
+
+  #refInternal: MutableRef<SpinningChoiceWheelComponent<V>> = { current: this };
+  get ref() {
+    return this.#refInternal;
+  }
+  set ref(refObj: MutableRef<SpinningChoiceWheelComponent<V>>) {
+    try {
+      if (refObj) {
+        this.#refInternal = refObj;
+        refObj.current = this;
+      }
+    } catch (err) {
+      console.error("Error while trying to set reference");
+    }
+  }
+
   static get observedAttributes() {
-    return ["segments"];
+    return ["segments-json"];
   }
 
   constructor() {
@@ -93,6 +115,9 @@ export class WheelComponent<V> extends HTMLElement {
     await delay(spinDuration * 1000 + 100);
     svg.style.transition = "";
     svg.style.transform = `rotate(${r}deg)`;
+    if (this.onwheelstopped) {
+      this.onwheelstopped(r as any);
+    }
   }
 
   attributeChangedCallback(...args: any[]) {
@@ -102,7 +127,7 @@ export class WheelComponent<V> extends HTMLElement {
 
   #parseAttributes() {
     try {
-      const str = this.getAttribute("segments");
+      const str = this.getAttribute("segments-json");
       if (str) {
         const value = JSON.parse(str);
         this.segments = value;
@@ -166,4 +191,7 @@ function delay(ms: number) {
   });
 }
 
-window.customElements.define("wheel-component", WheelComponent);
+window.customElements.define(
+  "spinning-choice-wheel",
+  SpinningChoiceWheelComponent
+);
