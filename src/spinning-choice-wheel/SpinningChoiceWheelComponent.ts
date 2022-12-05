@@ -165,7 +165,12 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     svg.style.transition = "";
     svg.style.transform = `rotate(${r}deg)`;
     if (this.onwheelstopped) {
-      this.onwheelstopped(r as any);
+      const index = Math.floor(
+        (((r + 270) % 360) / 360) * this.segments.length
+      );
+      const segment = this.segments.at(-index);
+      const value = segment!.value;
+      this.onwheelstopped(value);
     }
   }
 
