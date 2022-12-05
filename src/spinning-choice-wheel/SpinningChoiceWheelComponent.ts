@@ -18,16 +18,25 @@ interface WheelComponentAttributes<V> extends HTMLElement {
 }
 
 const css = `
- div.root {
+:host(spinning-choice-wheel) {
+  display: block;
+  box-sizing: border-box;
   width: 300px;
   height: 300px;
+}
+
+ div.root, div.wheel {
+  width: 100%;
+  height: 100%;
   box-sizing: border-box;
   display: block;
+  position: relative;
+  overflow: hidden;
  }
 
  svg {
-  width: 300px;
-  height: 300px;
+  width: 100%;
+  height: 100%;
  }
 `;
 
@@ -49,6 +58,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
       throw new Error("segments must be an array");
     }
     this.#segments_parsed = newValue;
+    this.#buildDom();
   }
 
   onwheelstopped?: (value: V) => void;
@@ -75,33 +85,72 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
   constructor() {
     super();
     const shadow = this.attachShadow({ mode: "open" });
+    this.#parseAttributes();
+    this.#buildStaticDom();
+    this.#buildDom();
+  }
+
+  #buildStaticDom() {
+    const shadow = this.shadowRoot;
+    if (!shadow) {
+      return;
+    }
     const style = document.createElement("style");
     style.innerHTML = css;
     shadow.appendChild(style);
 
     const root = document.createElement("div");
     root.classList.add("root");
-    root.innerHTML = `Hello World`;
+    shadow.appendChild(root);
+  }
+
+  #buildDom() {
+    if (!this.segments || this.segments.length < 1 || !this.shadowRoot) {
+      return;
+    }
+    const shadow = this.shadowRoot;
+    const root = shadow.querySelector("div.root");
+    if (!root) {
+      return;
+    }
+    root.childNodes.forEach((node) => node.remove());
+
+    const wheel = document.createElement("div");
+    wheel.classList.add("wheel");
+    root.appendChild(wheel);
 
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    root.appendChild(svg);
+    wheel.appendChild(svg);
 
     svg.onclick = this.handleClick.bind(this);
+    svg.setAttribute("viewBox", "0 0 300 300");
+    const angleWidth = 360 / this.segments.length;
+    let currentAngle = 0;
 
-    const path = `<path id="arc2" fill="red" stroke="#446688" stroke-width="0" d="${describeArc(
-      150,
-      150,
-      100,
-      30,
-      70
-    )}" />`;
-    svg.innerHTML = path;
-    shadow.appendChild(root);
-    this.#parseAttributes();
+    const paths = this.segments.map((segment, index) => {
+      const path = `<path id="arc${index}" fill="${
+        segment.backgroundColor
+      }" stroke="#446688" stroke-width="0" d="${describeArc(
+        150,
+        150,
+        100,
+        currentAngle,
+        currentAngle + angleWidth
+      )}" /><text fill="${segment.textColor}" ${describeRotatedText(
+        150,
+        150,
+        50,
+        currentAngle + angleWidth / 2
+      )}>${segment.text}</text>`;
+      currentAngle += angleWidth;
+      return path;
+    });
+
+    svg.innerHTML = paths.join("\r\n");
   }
 
   async handleClick() {
-    const svg = this.shadowRoot?.querySelector("div.root") as HTMLElement;
+    const svg = this.shadowRoot?.querySelector("div.wheel") as HTMLElement;
     if (!svg) {
       return;
     }
@@ -144,7 +193,7 @@ function polarToCartesian(
   radius: number,
   angleInDegrees: number
 ) {
-  var angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
 
   return {
     x: centerX + radius * Math.cos(angleInRadians),
@@ -159,11 +208,11 @@ function describeArc(
   startAngle: number,
   endAngle: number
 ) {
-  var center = polarToCartesian(x, y, radius, 0);
-  var start = polarToCartesian(x, y, radius, endAngle);
-  var end = polarToCartesian(x, y, radius, startAngle);
+  const center = polarToCartesian(x, y, radius, 0);
+  const start = polarToCartesian(x, y, radius, endAngle);
+  const end = polarToCartesian(x, y, radius, startAngle);
 
-  var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
 
   var d = [
     "M",
@@ -183,6 +232,18 @@ function describeArc(
   ].join(" ");
 
   return d;
+}
+
+function describeRotatedText(
+  cx: number,
+  cy: number,
+  radius: number,
+  angle: number
+) {
+  const translate = `translate(${radius + cx}, ${cy})`;
+  const rotate = `rotate(${angle - 90}, ${cx}, ${cy})`;
+
+  return ` text-anchor="middle" dominant-baseline="central" transform="${rotate} ${translate}" `;
 }
 
 function delay(ms: number) {
