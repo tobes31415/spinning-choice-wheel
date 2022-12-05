@@ -34,6 +34,18 @@ const css = `
   overflow: hidden;
  }
 
+ div.pointer {
+  position: absolute;
+    left: 57%;
+    top: 16%;
+    width: 40px;
+    height: 40px;
+  background-color: white;
+  border-top-left-radius: 100px;
+  border-top-right-radius: 100px;
+  border-bottom-right-radius: 100px;
+ }
+
  svg {
   width: 100%;
   height: 100%;
@@ -119,6 +131,10 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     wheel.classList.add("wheel");
     root.appendChild(wheel);
 
+    const pointer = document.createElement("div");
+    pointer.classList.add("pointer");
+    root.appendChild(pointer);
+
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     wheel.appendChild(svg);
 
@@ -165,9 +181,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     svg.style.transition = "";
     svg.style.transform = `rotate(${r}deg)`;
     if (this.onwheelstopped) {
-      const index = Math.floor(
-        (((r + 270) % 360) / 360) * this.segments.length
-      );
+      const index = Math.floor((((r + 90) % 360) / 360) * this.segments.length);
       const segment = this.segments.at(-index);
       const value = segment!.value;
       this.onwheelstopped(value);
