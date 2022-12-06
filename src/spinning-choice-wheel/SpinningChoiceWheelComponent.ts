@@ -32,7 +32,7 @@ const DEFAULT_BACKGROUND_COLOR = "black";
 const DEFAULT_TEXT_COLOR = "white";
 const DEFAULT_STROKE_COLOR = "grey";
 const DEFAULT_STROKE_WIDTH = 1;
-const DEFAULT_LOGO_SIZE = 100;
+const DEFAULT_LOGO_SIZE = 50;
 const DEFAULT_POINTER_SIZE = 20;
 const DEFAULT_POINTER_ANGLE = 45;
 const DEFAULT_POINTER_OFFSET = 2;
@@ -44,6 +44,7 @@ interface WheelComponentAttributes<V> extends HTMLElement {
   segments?: string;
   "logo-image"?: string;
   "logo-size"?: string;
+  "logo-spins"?: string;
   "pointer-image"?: string;
   "pointer-size"?: string;
   "pointer-angle"?: string;
@@ -120,6 +121,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
 
   logoImage?: string;
   logoSize?: number;
+  logoSpins?: boolean;
   pointerImage?: string;
   pointerSize?: number;
   duration?: number;
@@ -146,6 +148,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
       "segments",
       "logo-image",
       "logo-size",
+      "logo-spins",
       "pointer-image",
       "pointer-size",
       "pointer-angle",
@@ -169,6 +172,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
         { propertyName: "strokeWidth", parse: true },
         { propertyName: "logoImage" },
         { propertyName: "logoSize", parse: true },
+        { propertyName: "logoSpins", parse: true },
         { propertyName: "pointerImage" },
         { propertyName: "pointerSize", parse: true },
         { propertyName: "pointerAngle", parse: true },
@@ -209,15 +213,18 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     if (!root) {
       return;
     }
+    while (root.firstChild) {
+      root.lastChild?.remove();
+    }
     root.childNodes.forEach((node) => node.remove());
-
-    const wheelSpinning = document.createElement("div");
-    wheelSpinning.classList.add("wheel-spinning");
-    root.appendChild(wheelSpinning);
 
     const wheelFixed = document.createElement("div");
     wheelFixed.classList.add("wheel-fixed");
     root.appendChild(wheelFixed);
+
+    const wheelSpinning = document.createElement("div");
+    wheelSpinning.classList.add("wheel-spinning");
+    root.appendChild(wheelSpinning);
 
     const svgSpinning = document.createElementNS(
       "http://www.w3.org/2000/svg",
@@ -251,6 +258,9 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
       currentAngle += angleWidth;
       return path;
     });
+    if (this.logoSpins) {
+      this.#generateLogo(paths);
+    }
 
     svgSpinning.innerHTML = paths.join("\r\n");
 
@@ -260,15 +270,9 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     );
     svgFixed.setAttribute("viewBox", "0 0 300 300");
 
-    const fixedSvgHtml = [];
-    if (this.logoImage) {
-      const size = this.logoSize || DEFAULT_LOGO_SIZE;
-      const halfSize = size / 2;
-      fixedSvgHtml.push(
-        `<image width="${size}" height="${size}" x="${150 - halfSize}" y="${
-          150 - halfSize
-        }" href="${this.logoImage}" />`
-      );
+    const fixedSvgHtml: string[] = [];
+    if (!this.logoSpins) {
+      this.#generateLogo(fixedSvgHtml);
     }
 
     const pointer = this.pointerImage || DEFAULT_POINTER_IMAGE;
@@ -288,6 +292,18 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     svgFixed.innerHTML = fixedSvgHtml.join("\r\n");
     if (fixedSvgHtml.length > 0) {
       wheelFixed.appendChild(svgFixed);
+    }
+  }
+
+  #generateLogo(svgContents: string[]) {
+    if (this.logoImage) {
+      const size = this.logoSize || DEFAULT_LOGO_SIZE;
+      const halfSize = size / 2;
+      svgContents.push(
+        `<image width="${size}" height="${size}" x="${150 - halfSize}" y="${
+          150 - halfSize
+        }" href="${this.logoImage}" />`
+      );
     }
   }
 
