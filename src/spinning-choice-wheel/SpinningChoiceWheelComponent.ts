@@ -54,6 +54,7 @@ interface WheelComponentAttributes<V> extends HTMLElement {
   duration?: string;
   "stroke-color"?: string;
   "stroke-width"?: string;
+  shadow?: string;
 }
 
 const css = `
@@ -64,7 +65,7 @@ const css = `
   height: 300px;
 }
 
- div.root, div.wheel-fixed, div.wheel-spinning {
+ div.root, div.wheel-fixed, div.wheel-spinning, div.wheel-background {
   width: 100%;
   height: 100%;
   box-sizing: border-box;
@@ -72,12 +73,20 @@ const css = `
   position: relative;
   overflow: hidden;
  }
- div.wheel-fixed {
+ div.wheel-fixed, div.wheel-background {
   position: absolute;
   pointer-events: none;
-  z-index: 1
  }
 
+ div.wheel-background {
+  z-index: 1;
+ }
+ div.wheel-spinning {
+  z-index: 2;
+ }
+  div.wheel-fixed {
+  z-index: 3;
+ }
  div.pointer {
   position: absolute;
     left: 57%;
@@ -93,6 +102,10 @@ const css = `
  svg {
   width: 100%;
   height: 100%;
+ }
+
+ .shadow {
+  filter: drop-shadow(2px 4px 6px grey);
  }
 `;
 
@@ -129,6 +142,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
   strokeWidth?: number;
   pointerAngle?: number;
   pointerOffset?: number;
+  shadow?: string;
 
   #refInternal: MutableRef<SpinningChoiceWheelComponent<V>> = { current: this };
   get ref() {
@@ -158,6 +172,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
       "duration",
       "stroke-color",
       "stroke-width",
+      "shadow",
     ];
   }
 
@@ -180,6 +195,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
         { propertyName: "onWheelStopped", parse: "function" },
         { propertyName: "onWheelStarted", parse: "function" },
         { propertyName: "duration", parse: true },
+        { propertyName: "shadow" },
       ],
       this
     );
@@ -218,8 +234,18 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     }
     root.childNodes.forEach((node) => node.remove());
 
+    const wheelBackground = document.createElement("div");
+    wheelBackground.classList.add("wheel-background");
+    if (this.shadow !== "none") {
+      wheelBackground.classList.add("shadow");
+    }
+    root.appendChild(wheelBackground);
+
     const wheelFixed = document.createElement("div");
     wheelFixed.classList.add("wheel-fixed");
+    if (this.shadow !== "none") {
+      wheelFixed.classList.add("shadow");
+    }
     root.appendChild(wheelFixed);
 
     const wheelSpinning = document.createElement("div");
@@ -231,6 +257,13 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
       "svg"
     );
     wheelSpinning.appendChild(svgSpinning);
+
+    const svgBackground = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "svg"
+    );
+    svgBackground.setAttribute("viewBox", "0 0 300 300");
+    wheelBackground.appendChild(svgBackground);
 
     svgSpinning.onclick = this.handleClick.bind(this);
     svgSpinning.setAttribute("viewBox", "0 0 300 300");
@@ -271,6 +304,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     svgFixed.setAttribute("viewBox", "0 0 300 300");
 
     const fixedSvgHtml: string[] = [];
+    svgBackground.innerHTML = `<path id="arc-empty" fill="grey" stroke="grey" stroke-width="1" d="M 150 150  149.99999 50 A 100 100 0 1 0 150 50 Z"></path>`;
     if (!this.logoSpins) {
       this.#generateLogo(fixedSvgHtml);
     }
@@ -288,7 +322,6 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
         bottomLeft.y - size
       }" href="${pointer}" />`
     );
-
     svgFixed.innerHTML = fixedSvgHtml.join("\r\n");
     if (fixedSvgHtml.length > 0) {
       wheelFixed.appendChild(svgFixed);
