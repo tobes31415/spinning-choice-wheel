@@ -3,6 +3,7 @@ import {
   WebComponentAttributesMapper,
 } from "./AttributeMapper";
 import {
+  clamp,
   delay,
   describeArc,
   describeRotatedText,
@@ -16,6 +17,7 @@ export interface SegmentDescription<V> {
   strokeColor?: string;
   text: string;
   value: V;
+  fontSize?: number;
 }
 
 declare global {
@@ -30,6 +32,7 @@ const DEFAULT_DURATION = 5;
 const DEFAULT_RPS = 3;
 const DEFAULT_BACKGROUND_COLOR = "black";
 const DEFAULT_TEXT_COLOR = "white";
+const DEFAULT_TEXT_OFFSET = 10;
 const DEFAULT_STROKE_COLOR = "grey";
 const DEFAULT_STROKE_WIDTH = 1;
 const DEFAULT_LOGO_SIZE = 50;
@@ -270,6 +273,9 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     const angleWidth = 360 / this.segments.length;
     let currentAngle = 0;
 
+    const textStart =
+      (this.logoSize || DEFAULT_LOGO_SIZE) / 2 + DEFAULT_TEXT_OFFSET;
+    const textLength = 100 - textStart - DEFAULT_TEXT_OFFSET;
     const paths = this.segments.map((segment, index) => {
       const path = `<path id="arc${index}" fill="${
         segment.backgroundColor || DEFAULT_BACKGROUND_COLOR
@@ -285,9 +291,14 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
         currentAngle + angleWidth
       )}" /><text fill="${
         segment.textColor || DEFAULT_TEXT_COLOR
-      }" ${describeRotatedText(150, 150, 50, currentAngle + angleWidth / 2)}>${
-        segment.text
-      }</text>`;
+      }" ${describeRotatedText(
+        150,
+        150,
+        textStart,
+        currentAngle + angleWidth / 2
+      )} lengthAdjust="spacingAndGlyphs" textLength="${textLength}" ${
+        segment.fontSize ? `style="font-size: ${segment.fontSize}px"` : ""
+      }>${segment.text}</text>`;
       currentAngle += angleWidth;
       return path;
     });

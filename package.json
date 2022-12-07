@@ -1,6 +1,6 @@
 {
   "name": "@tobes31415/spinning-choice-wheel-web-component",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Renders a spinning wheel and outputs the resulting selection",
   "main": "./build/index.js",
   "exports": "./build/index.js",

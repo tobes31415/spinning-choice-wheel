@@ -46,6 +46,10 @@ export function describeArc(
   return d;
 }
 
+export function clamp(v: number, min: number, max: number): number {
+  return Math.max(Math.min(v, max), min);
+}
+
 export function describeRotatedText(
   cx: number,
   cy: number,
@@ -55,7 +59,7 @@ export function describeRotatedText(
   const translate = `translate(${radius + cx}, ${cy})`;
   const rotate = `rotate(${angle - 90}, ${cx}, ${cy})`;
 
-  return ` text-anchor="middle" dominant-baseline="central" transform="${rotate} ${translate}" `;
+  return ` text-anchor="start" dominant-baseline="central" transform="${rotate} ${translate}" `;
 }
 
 export function delay(ms: number) {
