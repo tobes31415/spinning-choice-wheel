@@ -28,6 +28,7 @@ declare global {
   }
 }
 
+const DEFAULT_SPINNER_BACKGROUND_COLOR = "grey";
 const DEFAULT_DURATION = 5;
 const DEFAULT_RPS = 3;
 const DEFAULT_BACKGROUND_COLOR = "black";
@@ -58,6 +59,7 @@ interface WheelComponentAttributes<V> extends HTMLElement {
   "stroke-color"?: string;
   "stroke-width"?: string;
   shadow?: string;
+  "spinner-background-color"?: string;
 }
 
 const css = `
@@ -146,6 +148,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
   pointerAngle?: number;
   pointerOffset?: number;
   shadow?: string;
+  spinnerBackgroundColor?: string;
 
   #refInternal: MutableRef<SpinningChoiceWheelComponent<V>> = { current: this };
   get ref() {
@@ -176,6 +179,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
       "stroke-color",
       "stroke-width",
       "shadow",
+      "spinner-background-color",
     ];
   }
 
@@ -199,6 +203,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
         { propertyName: "onWheelStarted", parse: "function" },
         { propertyName: "duration", parse: true },
         { propertyName: "shadow" },
+        { propertyName: "spinnerBackgroundColor" },
       ],
       this
     );
@@ -224,7 +229,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
   }
 
   #buildDom() {
-    if (!this.segments || this.segments.length < 1 || !this.shadowRoot) {
+    if (!this.shadowRoot) {
       return;
     }
     const shadow = this.shadowRoot;
@@ -276,32 +281,37 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     const textStart =
       (this.logoSize || DEFAULT_LOGO_SIZE) / 2 + DEFAULT_TEXT_OFFSET;
     const textLength = 100 - textStart - DEFAULT_TEXT_OFFSET;
-    const paths = this.segments.map((segment, index) => {
-      const path = `<path id="arc${index}" fill="${
-        segment.backgroundColor || DEFAULT_BACKGROUND_COLOR
-      }" stroke="${
-        segment.strokeColor || this.strokeColor || DEFAULT_STROKE_COLOR
-      }" stroke-width="${
-        this.strokeWidth ?? DEFAULT_STROKE_WIDTH
-      }" d="${describeArc(
-        150,
-        150,
-        100,
-        currentAngle,
-        currentAngle + angleWidth
-      )}" /><text fill="${
-        segment.textColor || DEFAULT_TEXT_COLOR
-      }" ${describeRotatedText(
-        150,
-        150,
-        textStart,
-        currentAngle + angleWidth / 2
-      )} lengthAdjust="spacingAndGlyphs" textLength="${textLength}" ${
-        segment.fontSize ? `style="font-size: ${segment.fontSize}px"` : ""
-      }>${segment.text}</text>`;
-      currentAngle += angleWidth;
-      return path;
-    });
+    const paths = [];
+    if (this.segments && this.segments.length > 1) {
+      paths.push(
+        ...this.segments.map((segment, index) => {
+          const path = `<path id="arc${index}" fill="${
+            segment.backgroundColor || DEFAULT_BACKGROUND_COLOR
+          }" stroke="${
+            segment.strokeColor || this.strokeColor || DEFAULT_STROKE_COLOR
+          }" stroke-width="${
+            this.strokeWidth ?? DEFAULT_STROKE_WIDTH
+          }" d="${describeArc(
+            150,
+            150,
+            100,
+            currentAngle,
+            currentAngle + angleWidth
+          )}" /><text fill="${
+            segment.textColor || DEFAULT_TEXT_COLOR
+          }" ${describeRotatedText(
+            150,
+            150,
+            textStart,
+            currentAngle + angleWidth / 2
+          )} lengthAdjust="spacingAndGlyphs" textLength="${textLength}" ${
+            segment.fontSize ? `style="font-size: ${segment.fontSize}px"` : ""
+          }>${segment.text}</text>`;
+          currentAngle += angleWidth;
+          return path;
+        })
+      );
+    }
     if (this.logoSpins) {
       this.#generateLogo(paths);
     }
@@ -315,7 +325,9 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     svgFixed.setAttribute("viewBox", "0 0 300 300");
 
     const fixedSvgHtml: string[] = [];
-    svgBackground.innerHTML = `<path id="arc-empty" fill="grey" stroke="grey" stroke-width="1" d="M 150 150  149.99999 50 A 100 100 0 1 0 150 50 Z"></path>`;
+    const spinnerColor =
+      this.spinnerBackgroundColor || DEFAULT_SPINNER_BACKGROUND_COLOR;
+    svgBackground.innerHTML = `<path id="arc-empty" fill="${spinnerColor}" stroke="${spinnerColor}" stroke-width="1" d="M 150 150  149.99999 50 A 100 100 0 1 0 150 50 Z"></path>`;
     if (!this.logoSpins) {
       this.#generateLogo(fixedSvgHtml);
     }
@@ -375,7 +387,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     await delay(spinDuration * 1000 + 100);
     svg.style.transition = "";
     svg.style.transform = `rotate(${r}deg)`;
-    if (this.onWheelStopped) {
+    if (this.onWheelStopped && this.segments && this.segments.length > 1) {
       const angleWidth = 360 / this.segments.length;
       const pA = this.pointerAngle ?? DEFAULT_POINTER_ANGLE;
       const index = Math.floor(
