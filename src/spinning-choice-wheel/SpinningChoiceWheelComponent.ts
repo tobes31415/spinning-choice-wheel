@@ -324,10 +324,10 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     const bottomLeft = polarToCartesian(
       150,
       150,
-      100 - (this.pointerOffset || DEFAULT_POINTER_OFFSET),
-      this.pointerAngle || DEFAULT_POINTER_ANGLE
+      100 - (this.pointerOffset ?? DEFAULT_POINTER_OFFSET),
+      this.pointerAngle ?? DEFAULT_POINTER_ANGLE
     );
-    const size = this.pointerSize || DEFAULT_POINTER_SIZE;
+    const size = this.pointerSize ?? DEFAULT_POINTER_SIZE;
     fixedSvgHtml.push(
       `<image width="${size}" height="${size}" x="${bottomLeft.x}" y="${
         bottomLeft.y - size
@@ -372,7 +372,11 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
     svg.style.transition = "";
     svg.style.transform = `rotate(${r}deg)`;
     if (this.onWheelStopped) {
-      const index = Math.floor((((r + 90) % 360) / 360) * this.segments.length);
+      const angleWidth = 360 / this.segments.length;
+      const pA = this.pointerAngle ?? DEFAULT_POINTER_ANGLE;
+      const index = Math.floor(
+        (((r + angleWidth - pA) % 360) / 360) * this.segments.length
+      );
       const segment = this.segments.at(-index);
       const value = segment!.value;
       this.onWheelStopped(value);
