@@ -282,7 +282,7 @@ export class SpinningChoiceWheelComponent<V> extends HTMLElement {
       (this.logoSize || DEFAULT_LOGO_SIZE) / 2 + DEFAULT_TEXT_OFFSET;
     const textLength = 100 - textStart - DEFAULT_TEXT_OFFSET;
     const paths = [];
-    if (this.segments && this.segments.length > 1) {
+    if (this.segments && this.segments.length >= 1) {
       paths.push(
         ...this.segments.map((segment, index) => {
           const path = `<path id="arc${index}" fill="${
